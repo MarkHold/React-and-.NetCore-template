@@ -108,6 +108,8 @@ const RISK_WATCHLIST = [
   { area: 'Cybersecurity', exposure: 29, note: 'No active incidents, controls validated in January audit.' },
 ]
 
+const formatMillions = (value: number) => `${(value / 10).toFixed(3)}M`
+
 function Dashboard() {
   return (
     <section className="ceo-dashboard" aria-label="CEO dashboard">
@@ -144,23 +146,53 @@ function Dashboard() {
             <p className="card-subtitle">Updated: 01/02/2025</p>
           </div>
           <div className="bar-chart" role="img" aria-label="Actual and projected revenue bar chart by company">
-            {REVENUE_TREND.map((point) => (
-              <div key={point.company} className="bar-group">
-                <div className="bar-stack">
-                  <span
-                    className="bar-revenue"
-                    style={{ height: `${point.actualRevenue}%` }}
-                    title={`Actual Revenue ${point.actualRevenue}`}
-                  />
-                  <span
-                    className="bar-margin"
-                    style={{ height: `${point.projectedRevenue}%` }}
-                    title={`Projected Revenue ${point.projectedRevenue}`}
-                  />
+            {REVENUE_TREND.map((point) => {
+              const barsAreClose = Math.abs(point.actualRevenue - point.projectedRevenue) < 8
+              let actualLabelOffsetRem = 0.18
+              let projectedLabelOffsetRem = 0.18
+
+              if (barsAreClose) {
+                if (point.actualRevenue >= point.projectedRevenue) {
+                  actualLabelOffsetRem = 0.58
+                } else {
+                  projectedLabelOffsetRem = 0.58
+                }
+              }
+
+              return (
+                <div key={point.company} className="bar-group">
+                  <div className="bar-stack">
+                    <span className="bar-column">
+                      <span
+                        className="bar-value-label bar-value-label-revenue"
+                        style={{ bottom: `calc(${point.actualRevenue}% + ${actualLabelOffsetRem}rem)` }}
+                      >
+                        {formatMillions(point.actualRevenue)}
+                      </span>
+                      <span
+                        className="bar-revenue"
+                        style={{ height: `${point.actualRevenue}%` }}
+                        title={`Actual Revenue ${point.actualRevenue}`}
+                      />
+                    </span>
+                    <span className="bar-column">
+                      <span
+                        className="bar-value-label bar-value-label-projected"
+                        style={{ bottom: `calc(${point.projectedRevenue}% + ${projectedLabelOffsetRem}rem)` }}
+                      >
+                        {formatMillions(point.projectedRevenue)}
+                      </span>
+                      <span
+                        className="bar-margin"
+                        style={{ height: `${point.projectedRevenue}%` }}
+                        title={`Projected Revenue ${point.projectedRevenue}`}
+                      />
+                    </span>
+                  </div>
+                  <p className="bar-label">{point.company}</p>
                 </div>
-                <p className="bar-label">{point.company}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
           <div className="chart-legend">
             <span className="legend-item"><span className="legend-dot legend-revenue" />Actual Revenue</span>
@@ -204,31 +236,33 @@ function Dashboard() {
             <p className="card-subtitle">Execution pipeline through Q3 2026</p>
           </div>
 
-          <table className="compact-table">
-            <thead>
-              <tr>
-                <th>Initiative</th>
-                <th>Owner</th>
-                <th>Target</th>
-                <th>Progress</th>
-              </tr>
-            </thead>
-            <tbody>
-              {INITIATIVES.map((item) => (
-                <tr key={item.initiative}>
-                  <td>{item.initiative}</td>
-                  <td>{item.owner}</td>
-                  <td>{item.target}</td>
-                  <td>
-                    <div className="progress-track">
-                      <span className="progress-fill" style={{ width: `${item.progress}%` }} />
-                    </div>
-                    <span className="progress-value">{item.progress}%</span>
-                  </td>
+          <div className="initiatives-table-wrap">
+            <table className="compact-table">
+              <thead>
+                <tr>
+                  <th>Initiative</th>
+                  <th>Owner</th>
+                  <th>Target</th>
+                  <th>Progress</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {INITIATIVES.map((item) => (
+                  <tr key={item.initiative}>
+                    <td>{item.initiative}</td>
+                    <td>{item.owner}</td>
+                    <td>{item.target}</td>
+                    <td>
+                      <div className="progress-track">
+                        <span className="progress-fill" style={{ width: `${item.progress}%` }} />
+                      </div>
+                      <span className="progress-value">{item.progress}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </article>
 
         <article className="dashboard-card risk-card">
