@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import './App.css'
+import Dashboard from './Dashboard'
 
 type AgentStatus = 'online' | 'busy' | 'offline'
 
@@ -239,6 +240,7 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
   const [isDetailsOpen, setDetailsOpen] = useState(window.innerWidth >= 1024)
   const [searchQuery, setSearchQuery] = useState('')
+  const isDashboardView = activeTab === 'dashboard'
 
   const activeAgent = useMemo(
     () => MOCK_AGENTS.find((agent) => agent.id === selectedAgentId) ?? MOCK_AGENTS[0],
@@ -357,11 +359,15 @@ function App() {
               <Icons.Menu />
             </button>
             <div className="active-agent-header">
-              <h1 className="active-agent-title">{activeAgent.name}</h1>
-              <div className="active-agent-status-pill">
-                <span className="status-pulse" />
-                {activeAgent.status.toUpperCase()}
-              </div>
+              <h1 className="active-agent-title">{isDashboardView ? 'CEO Dashboard' : activeAgent.name}</h1>
+              {isDashboardView ? (
+                <div className="dashboard-mode-pill">EXECUTIVE</div>
+              ) : (
+                <div className="active-agent-status-pill">
+                  <span className="status-pulse" />
+                  {activeAgent.status.toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
 
@@ -372,7 +378,11 @@ function App() {
               </span>
               <input
                 type="text"
-                placeholder="Search across agents and insights..."
+                placeholder={
+                  isDashboardView
+                    ? 'Search dashboard metrics and entities...'
+                    : 'Search across agents and insights...'
+                }
                 className="search-input"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -385,14 +395,16 @@ function App() {
               <Icons.Bell />
               <span className="notification-dot" />
             </button>
-            <button
-              type="button"
-              className="icon-button mobile-details-toggle"
-              onClick={() => setDetailsOpen((previous) => !previous)}
-              aria-label="Toggle details"
-            >
-              <Icons.Info />
-            </button>
+            {!isDashboardView && (
+              <button
+                type="button"
+                className="icon-button mobile-details-toggle"
+                onClick={() => setDetailsOpen((previous) => !previous)}
+                aria-label="Toggle details"
+              >
+                <Icons.Info />
+              </button>
+            )}
 
             <div className="header-divider" />
 
@@ -407,145 +419,153 @@ function App() {
         </header>
 
         <div className="content-row">
-          <div className="chat-panel">
-            <div className="messages-scroll">
-              {(messages[selectedAgentId] ?? []).map((message) => (
-                <div key={message.id} className={`message-row ${message.isAi ? 'message-row-ai' : 'message-row-user'}`}>
-                  <div className={`message-block ${message.isAi ? '' : 'message-block-user'}`}>
-                    <div className={`message-avatar ${message.isAi ? 'message-avatar-ai' : 'message-avatar-user'}`}>
-                      {message.isAi ? (
-                        <img src={activeAgent.avatar} className="message-agent-avatar" alt={activeAgent.name} />
-                      ) : (
-                        <span className="message-user-icon">
-                          <Icons.UserCircle />
-                        </span>
-                      )}
+          {isDashboardView ? (
+            <div className="dashboard-content-shell">
+              <Dashboard />
+            </div>
+          ) : (
+            <>
+              <div className="chat-panel">
+                <div className="messages-scroll">
+                  {(messages[selectedAgentId] ?? []).map((message) => (
+                    <div key={message.id} className={`message-row ${message.isAi ? 'message-row-ai' : 'message-row-user'}`}>
+                      <div className={`message-block ${message.isAi ? '' : 'message-block-user'}`}>
+                        <div className={`message-avatar ${message.isAi ? 'message-avatar-ai' : 'message-avatar-user'}`}>
+                          {message.isAi ? (
+                            <img src={activeAgent.avatar} className="message-agent-avatar" alt={activeAgent.name} />
+                          ) : (
+                            <span className="message-user-icon">
+                              <Icons.UserCircle />
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={`message-bubble ${message.isAi ? 'message-bubble-ai' : 'message-bubble-user'}`}>
+                          <p className="message-text">{message.text}</p>
+                          <p className="message-time">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="composer-wrap">
+                  <form onSubmit={handleSendMessage} className="composer-form">
+                    <div className="composer-input-shell">
+                      <button type="button" className="composer-plus-button" aria-label="Add attachment">
+                        <Icons.Plus />
+                      </button>
+
+                      <input
+                        type="text"
+                        placeholder={`Message ${activeAgent.name}...`}
+                        className="composer-input"
+                        value={inputValue}
+                        onChange={(event) => setInputValue(event.target.value)}
+                      />
+
+                      <button type="submit" disabled={!inputValue.trim()} className="composer-send-button" aria-label="Send message">
+                        <Icons.Send />
+                      </button>
                     </div>
 
-                    <div className={`message-bubble ${message.isAi ? 'message-bubble-ai' : 'message-bubble-user'}`}>
-                      <p className="message-text">{message.text}</p>
-                      <p className="message-time">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <p className="composer-footnote">
+                      AI-generated medical insights should be validated by certified PureHealth practitioners.
+                    </p>
+                  </form>
+                </div>
+              </div>
+
+              {isDetailsOpen && (
+                <aside className="details-panel">
+                  <div className="details-header">
+                    <h2 className="details-title">Agent Details</h2>
+                    <button
+                      type="button"
+                      onClick={() => setDetailsOpen(false)}
+                      className="details-close-button"
+                      aria-label="Close details"
+                    >
+                      <Icons.X />
+                    </button>
+                  </div>
+
+                  <div className="details-content">
+                    <div className="details-profile">
+                      <div className="details-avatar-wrap">
+                        <img src={activeAgent.avatar} className="details-avatar" alt={activeAgent.name} />
+                        <div className="details-avatar-status-wrap">
+                          <span className="details-avatar-status" />
+                        </div>
+                      </div>
+                      <h3 className="details-name">{activeAgent.name}</h3>
+                      <p className="details-role">{activeAgent.role}</p>
+                    </div>
+
+                    <div className="details-sections">
+                      <div>
+                        <h4 className="details-section-title">Description</h4>
+                        <p className="details-description">{activeAgent.description}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="details-section-title">Capabilities</h4>
+                        <div className="capabilities-list">
+                          {activeAgent.capabilities.map((capability) => (
+                            <span key={capability} className="capability-pill">
+                              <Icons.CheckCircle2 />
+                              {capability}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="details-actions">
+                      <button type="button" className="details-action-button">
+                        <span className="details-action-left">
+                          <span className="details-action-icon">
+                            <Icons.Clock />
+                          </span>
+                          View Shared Files
+                        </span>
+                        <Icons.ChevronRight size={14} />
+                      </button>
+                      <button type="button" className="details-action-button">
+                        <span className="details-action-left">
+                          <span className="details-action-icon">
+                            <Icons.Info size={16} />
+                          </span>
+                          Data Usage Policy
+                        </span>
+                        <Icons.ChevronRight size={14} />
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            <div className="composer-wrap">
-              <form onSubmit={handleSendMessage} className="composer-form">
-                <div className="composer-input-shell">
-                  <button type="button" className="composer-plus-button" aria-label="Add attachment">
-                    <Icons.Plus />
-                  </button>
+                  <div className="details-footer">
+                    <div className="details-footer-content">
+                      <Icons.ShieldCheck size={20} />
+                      <p className="details-footer-text">PureHealth Secure Node v2.4</p>
+                    </div>
+                  </div>
+                </aside>
+              )}
 
-                  <input
-                    type="text"
-                    placeholder={`Message ${activeAgent.name}...`}
-                    className="composer-input"
-                    value={inputValue}
-                    onChange={(event) => setInputValue(event.target.value)}
-                  />
-
-                  <button type="submit" disabled={!inputValue.trim()} className="composer-send-button" aria-label="Send message">
-                    <Icons.Send />
-                  </button>
-                </div>
-
-                <p className="composer-footnote">
-                  AI-generated medical insights should be validated by certified PureHealth practitioners.
-                </p>
-              </form>
-            </div>
-          </div>
-
-          {isDetailsOpen && (
-            <aside className="details-panel">
-              <div className="details-header">
-                <h2 className="details-title">Agent Details</h2>
+              {!isDetailsOpen && (
                 <button
                   type="button"
-                  onClick={() => setDetailsOpen(false)}
-                  className="details-close-button"
-                  aria-label="Close details"
+                  onClick={() => setDetailsOpen(true)}
+                  className="details-floating-open"
+                  aria-label="Open agent details"
+                  title="Open agent details"
                 >
-                  <Icons.X />
+                  <span className="details-floating-open-text">i</span>
                 </button>
-              </div>
-
-              <div className="details-content">
-                <div className="details-profile">
-                  <div className="details-avatar-wrap">
-                    <img src={activeAgent.avatar} className="details-avatar" alt={activeAgent.name} />
-                    <div className="details-avatar-status-wrap">
-                      <span className="details-avatar-status" />
-                    </div>
-                  </div>
-                  <h3 className="details-name">{activeAgent.name}</h3>
-                  <p className="details-role">{activeAgent.role}</p>
-                </div>
-
-                <div className="details-sections">
-                  <div>
-                    <h4 className="details-section-title">Description</h4>
-                    <p className="details-description">{activeAgent.description}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="details-section-title">Capabilities</h4>
-                    <div className="capabilities-list">
-                      {activeAgent.capabilities.map((capability) => (
-                        <span key={capability} className="capability-pill">
-                          <Icons.CheckCircle2 />
-                          {capability}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="details-actions">
-                  <button type="button" className="details-action-button">
-                    <span className="details-action-left">
-                      <span className="details-action-icon">
-                        <Icons.Clock />
-                      </span>
-                      View Shared Files
-                    </span>
-                    <Icons.ChevronRight size={14} />
-                  </button>
-                  <button type="button" className="details-action-button">
-                    <span className="details-action-left">
-                      <span className="details-action-icon">
-                        <Icons.Info size={16} />
-                      </span>
-                      Data Usage Policy
-                    </span>
-                    <Icons.ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="details-footer">
-                <div className="details-footer-content">
-                  <Icons.ShieldCheck size={20} />
-                  <p className="details-footer-text">PureHealth Secure Node v2.4</p>
-                </div>
-              </div>
-            </aside>
-          )}
-
-          {!isDetailsOpen && (
-            <button
-              type="button"
-              onClick={() => setDetailsOpen(true)}
-              className="details-floating-open"
-              aria-label="Open agent details"
-              title="Open agent details"
-            >
-              <span className="details-floating-open-text">i</span>
-            </button>
+              )}
+            </>
           )}
         </div>
       </main>
